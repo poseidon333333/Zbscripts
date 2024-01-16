@@ -9,9 +9,9 @@ Random_answer = 1
 chromedriver_autoinstaller.install()
 
 storylink = "https://www.zbschools.sg/stories-"
-username = '221562E@student.hci.edu.sg'
-pw = 'ZhangLingli0413'
-with open("zbbot1.txt") as txt:
+username = '*******@student.hci.edu.sg'
+pw = ''
+with open("zbbot.txt") as txt:
     startpost = int(txt.read())
 increment = 1
 

@@ -3,13 +3,14 @@ import time
 import pinyin
 from selenium import webdriver
 import chromedriver_autoinstaller
+from selenium.common import NoSuchElementException
 from selenium.webdriver.common.by import By
 
 Random_answer = 1
 storylink = "https://www.zbschools.sg/stories-"
 username = ''
 pw = ''
-
+pattern = None
 chromedriver_autoinstaller.install()
 
 driver = webdriver.Chrome()
@@ -33,8 +34,6 @@ def WaitTill(element, tag=None, content=None):
 def init_driver():
     # Create ChromeOptions if needed, otherwise, just return a new Chrome webdriver
     return webdriver.Chrome()
-
-
 
 def remove(string, remove_str):
     return string.replace(remove_str, "")
@@ -69,43 +68,15 @@ def login(driver):
     password.send_keys(pw)
     submit_button = driver.find_element('id', "btn_submit")
     submit_button.click()
-def Quiz_py():
-    startquiz = driver.find_element('xpath','//*[@id="lo_main"]/div/div[3]/div/div[1]/div[1]/div[3]/div/div/a[4]')
-    startquiz.click()
-    time.sleep(1)
-    driver.switch_to.frame('litebox_iframe')
-    qcount = len(driver.find_elements('xpath', "/html/body/div/div/form/div"))
-    regex = ""
-    pinyin = ""
-    for q in range(1,qcount+1):
-        answer = ""
-        try:
-#            text = driver.find_element('xpath', f'//*[@id="quizform"]/div[{q}]/div[1]/div[1]/h3/span/b/u').text
-            try:
-                tpy = driver.find_element('xpath', f"/html/body/div/div/form/div[{q}]/div[1]/div[1]/h3/span/b").text
-                answer = pinyin.get(tpy)
-            except:
-                pass
-            qcount = len(driver.find_elements('xpath', f"/html/body/div/div/form/div[{q}]/div[2]/table/tbody/tr"))
-            for a in range(1, qcount + 1):
-                optext = driver.find_element('xpath',
-                                             f"/html/body/div/div/form/div[{q}]/div[2]/table/tbody/tr[{a}]/td[2]").text
-                optext = (remove(optext, " "))
-                opt = driver.find_element('xpath',
-                                          f"/html/body/div/div/form/div[{q}]/div[2]/table/tbody/tr[{a}]/td[1]/input")
-                if answer == optext:
-                    opt.click()
-        except:
-            list(regex).append(q)
 
 def Do_quiz(driver):
+    time.sleep(1)
     startquiz = driver.find_element('xpath','//*[@id="lo_main"]/div/div[3]/div/div[1]/div[1]/div[3]/div/div/a[4]')
     startquiz.click()
     time.sleep(1)
     driver.switch_to.frame('litebox_iframe')
     qcount = len(driver.find_elements('xpath', "/html/body/div/div/form/div"))
     regex = ""
-    pinyin = ""
     for q in range(1,qcount+1):
         answer = ""
         try:
@@ -114,25 +85,25 @@ def Do_quiz(driver):
             answer = pinyin.get(tpy)
             qcount = len(driver.find_elements('xpath', f"/html/body/div/div/form/div[{q}]/div[2]/table/tbody/tr"))
             for a in range(1, qcount + 1):
-                optext = driver.find_element('xpath',
-                                             f"/html/body/div/div/form/div[{q}]/div[2]/table/tbody/tr[{a}]/td[2]").text
+                optext = driver.find_element('xpath', f"/html/body/div/div/form/div[{q}]/div[2]/table/tbody/tr[{a}]/td[2]").text
                 optext = (remove(optext, " "))
-                opt = driver.find_element('xpath',
-                                          f"/html/body/div/div/form/div[{q}]/div[2]/table/tbody/tr[{a}]/td[1]/input")
+                opt = driver.find_element('xpath', f"/html/body/div/div/form/div[{q}]/div[2]/table/tbody/tr[{a}]/td[1]/input")
                 if answer == optext:
                     opt.click()
-        except:
+        except NoSuchElementException:
             list(regex).append(q)
             result_string = ''
             for element in driver.find_elements('xpath', '//*[@class="term"]'):
                 result_string += element.text
-                # result_string is the entire passage of the article
-                passage = result_string
-                for y in range(1, len(regex) + 1):
-                    reN = [regex[y - 1]]
-                    pattern = driver.find_element('xpath', f'//*[@id="quizform"]/div[{reN}]/div[1]/div[1]/h3/span')
+            # result_string is the entire passage of the article
+            passage = result_string
+            print(passage)
+            for y in range(1, len(regex) + 1):
+                reN = [regex[y]]
+                pattern = driver.find_element('xpath', f'//*[@id="quizform"]/div[{reN}]/div[1]/div[1]/h3/span')
 
-            # Search for the pattern in the passage o
+
+            # Search for the pattern in the passage
             match = re.search(pattern, passage)
 
             # Check if a match is found
@@ -163,48 +134,6 @@ def Do_quiz(driver):
                 # try and make it to repeating quizzes or make numbers available
     submit = driver.find_element('xpath', '//*[@id="quizform"]/div[5]/input')
     submit.click()
-
-
-def Quiz_re():
-    result_string = ''
-    for element in driver.find_elements('xpath', '//*[@class="term"]'):
-        result_string += element.text
-        # result_string is the entire passage of the article
-        passage = result_string
-        for y in len(regex):
-            pattern = driver.find_element('xpath', '//*[@id="quizform"]/div[{}]/div[1]/div[1]/h3/span')
-
-    # Search for the pattern in the passage o
-    match = re.search(pattern, passage)
-
-    # Check if a match is found
-    if match:
-        # Extract the content within the parentheses (capturing group)
-        answer = match.group(1)
-        answer_choices = ""
-        acount = len('xpath', '//*[@id="quizform"]/div[3]/div[2]/table')
-        for i in range(1, acount + 1):
-            answer_choices.append('xpath', f'//*[@id="quizform"]/div[3]/div[2]/table/tbody/tr[{i}]/td[2]')
-        # Gave the answer choices in the list
-        # Check which answer choice matches the extracted answer using regex
-        matching_choice = None
-        for choice in answer_choices:
-            choice_pattern = re.escape(choice.split('.')[1].strip())
-            if re.search(choice_pattern, answer):
-                matching_choice = choice
-                break
-        # Print the result
-        if matching_choice:
-            y = answer_choices.index(choice) + 1
-            Answer_btn = ('xpath', f'f"/html/body/div/div/form/div[{y}]/input"')
-            Answer_btn.click()
-        else:
-            print("No matching answer choice found.")
-    else:
-        print("Pattern not found in the passage.")
-        # try and make it to repeating quizzes or make numbers available
-
-
 
 def do_quiz(driver):
         Quiz_py()
@@ -265,9 +194,78 @@ while(True):
 
 
 
+"""
+def Quiz_re():
+    result_string = ''
+    for element in driver.find_elements('xpath', '//*[@class="term"]'):
+        result_string += element.text
+        # result_string is the entire passage of the article
+        passage = result_string
+        for y in len(regex):
+            pattern = driver.find_element('xpath', '//*[@id="quizform"]/div[{}]/div[1]/div[1]/h3/span')
+
+    # Search for the pattern in the passage o
+    match = re.search(pattern, passage)
+
+    # Check if a match is found
+    if match:
+        # Extract the content within the parentheses (capturing group)
+        answer = match.group(1)
+        answer_choices = ""
+        acount = len('xpath', '//*[@id="quizform"]/div[3]/div[2]/table')
+        for i in range(1, acount + 1):
+            answer_choices.append('xpath', f'//*[@id="quizform"]/div[3]/div[2]/table/tbody/tr[{i}]/td[2]')
+        # Gave the answer choices in the list
+        # Check which answer choice matches the extracted answer using regex
+        matching_choice = None
+        for choice in answer_choices:
+            choice_pattern = re.escape(choice.split('.')[1].strip())
+            if re.search(choice_pattern, answer):
+                matching_choice = choice
+                break
+        # Print the result
+        if matching_choice:
+            y = answer_choices.index(choice) + 1
+            Answer_btn = ('xpath', f'f"/html/body/div/div/form/div[{y}]/input"')
+            Answer_btn.click()
+        else:
+            print("No matching answer choice found.")
+    else:
+        print("Pattern not found in the passage.")
+        # try and make it to repeating quizzes or make numbers available
+"""
 
 
-
+"""
+def Quiz_py():
+    startquiz = driver.find_element('xpath','//*[@id="lo_main"]/div/div[3]/div/div[1]/div[1]/div[3]/div/div/a[4]')
+    startquiz.click()
+    time.sleep(1)
+    driver.switch_to.frame('litebox_iframe')
+    qcount = len(driver.find_elements('xpath', "/html/body/div/div/form/div"))
+    regex = ""
+    pinyin = ""
+    for q in range(1,qcount+1):
+        answer = ""
+        try:
+#            text = driver.find_element('xpath', f'//*[@id="quizform"]/div[{q}]/div[1]/div[1]/h3/span/b/u').text
+            try:
+                tpy = driver.find_element('xpath', f"/html/body/div/div/form/div[{q}]/div[1]/div[1]/h3/span/b").text
+                answer = pinyin.get(tpy)
+            except:
+                pass
+            qcount = len(driver.find_elements('xpath', f"/html/body/div/div/form/div[{q}]/div[2]/table/tbody/tr"))
+            for a in range(1, qcount + 1):
+                optext = driver.find_element('xpath',
+                                             f"/html/body/div/div/form/div[{q}]/div[2]/table/tbody/tr[{a}]/td[2]").text
+                optext = (remove(optext, " "))
+                opt = driver.find_element('xpath',
+                                          f"/html/body/div/div/form/div[{q}]/div[2]/table/tbody/tr[{a}]/td[1]/input")
+                if answer == optext:
+                    opt.click()
+        except:
+            list(regex).append(q)
+"""
 
 
 
